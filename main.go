@@ -68,11 +68,23 @@ func loadDB() error {
 }
 
 func saveDB() error {
-	data, err := json.MarshalIndent(db, "", "  ")
-	if err != nil {
-		return err
+	var lines []string
+	for _, day := range db.DayLogs {
+		b, err := json.Marshal(day)
+		if err != nil {
+			return err
+		}
+		lines = append(lines, "    "+string(b))
 	}
-	return os.WriteFile(dbPath, data, 0644)
+	var sb strings.Builder
+	sb.WriteString("{\n  \"day_logs\": [")
+	if len(lines) > 0 {
+		sb.WriteString("\n")
+		sb.WriteString(strings.Join(lines, ",\n"))
+		sb.WriteString("\n  ")
+	}
+	sb.WriteString("]\n}\n")
+	return os.WriteFile(dbPath, []byte(sb.String()), 0644)
 }
 
 // Day log helpers
