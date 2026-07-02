@@ -130,6 +130,44 @@ func sortDayLogs() {
 	})
 }
 
+// Summary
+
+func renderSummary() string {
+	now := time.Now()
+	today := now.Format("2006-01-02")
+
+	var totalUnitsVal float64
+	totalDrinks := 0
+	freeDays := 0
+
+	for i := 1; i <= 7; i++ {
+		date := now.AddDate(0, 0, -i).Format("2006-01-02")
+		dl := findDayLog(date)
+		if dl == nil || len(dl.Drinks) == 0 {
+			freeDays++
+		} else {
+			for _, d := range dl.Drinks {
+				totalDrinks += d.Count
+				totalUnitsVal += d.Units()
+			}
+		}
+	}
+
+	// Also include today if it has drinks
+	if dl := findDayLog(today); dl != nil {
+		for _, d := range dl.Drinks {
+			totalDrinks += d.Count
+			totalUnitsVal += d.Units()
+		}
+	}
+
+	return `<div class="summary-grid">` +
+		`<div class="summary-card"><span class="summary-val">` + strconv.Itoa(totalDrinks) + `</span><span class="summary-label">drinks</span></div>` +
+		`<div class="summary-card"><span class="summary-val">` + formatUnits(totalUnitsVal) + `</span><span class="summary-label">units</span></div>` +
+		`<div class="summary-card"><span class="summary-val">` + strconv.Itoa(freeDays) + `<span class="summary-val-sub">/7</span></span><span class="summary-label">drink-free days</span></div>` +
+		`</div>`
+}
+
 // Tile rendering
 
 func dateColorClass(units float64, date string) string {
@@ -331,6 +369,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page := string(tmpl)
+	page = strings.ReplaceAll(page, "{{SUMMARY}}", renderSummary())
 	page = strings.ReplaceAll(page, "{{DAYS_TILES}}", renderDaysRow(0))
 	page = strings.ReplaceAll(page, "{{WEEK_TILES}}", renderWeekRow(0))
 	page = strings.ReplaceAll(page, "{{MONTH_GRID}}", renderMonthGrid(0))
@@ -338,6 +377,12 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	page = strings.ReplaceAll(page, "{{MONTH_LABEL}}", monthLabel(0))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, page)
+}
+
+
+func handleSummary(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, renderSummary())
 }
 
 func handleTilesDays(w http.ResponseWriter, r *http.Request) {
@@ -486,6 +531,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.FileServer(http.FS(staticFiles)))
 	mux.HandleFunc("/", handleIndex)
+	mux.HandleFunc("/summary",       handleSummary)
 	mux.HandleFunc("/tiles/days",   handleTilesDays)
 	mux.HandleFunc("/tiles/week",   handleTilesWeek)
 	mux.HandleFunc("/tiles/month",  handleTilesMonth)

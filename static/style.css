@@ -305,3 +305,43 @@ details > .details-inner       { padding: 0.75rem 1rem 1rem; overflow-x: auto; }
 .legend      { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1.5rem; }
 .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--text-dim); }
 .legend-dot  { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+/* Summary */
+
+#summary { margin-bottom: 1.5rem; }
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.summary-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 0.9rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.summary-val {
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.summary-val-sub {
+  font-size: 0.65em;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.summary-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
