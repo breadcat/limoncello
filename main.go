@@ -18,7 +18,7 @@ import (
 //go:embed static
 var staticFiles embed.FS
 
-var volumes = []int{25, 125, 330, 440, 500, 568, 660, 750}
+var volumes = []int{25, 125, 187, 284, 330, 375, 440, 500, 568, 660, 750}
 
 func calcUnits(ml int, abv float64) float64 {
 	return float64(ml) * abv / 1000.0
