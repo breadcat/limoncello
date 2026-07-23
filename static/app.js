@@ -1,8 +1,12 @@
 'use strict';
 
 let daysOffset  = 0;
-let weekOffset  = 0;
-let monthOffset = 0;
+
+// Month (scrollable weeks) view
+const MONTH_BATCH = 6;               // must match monthBatchSize in main.go
+let monthWeeksLoaded  = MONTH_BATCH; // weeks already present server-side on load
+let monthScrollReady  = false;       // becomes true once the panel is first opened
+let monthLoadingMore  = false;
 
 // Labels
 
@@ -11,24 +15,6 @@ function updateDaysLabel() {
   const fwd = document.getElementById('days-forward-btn');
   el.textContent = daysOffset === 0 ? 'Today ±2' : daysOffset + 'd back';
   fwd.disabled   = daysOffset <= 0;
-}
-
-function updateWeekLabel() {
-  const el  = document.getElementById('week-offset-label');
-  const fwd = document.getElementById('week-forward-btn');
-  if      (weekOffset === 0) el.textContent = 'This week';
-  else if (weekOffset === 1) el.textContent = 'Last week';
-  else                       el.textContent = weekOffset + ' weeks ago';
-  fwd.disabled = weekOffset <= 0;
-}
-
-function updateMonthLabel() {
-  const el  = document.getElementById('month-offset-label');
-  const fwd = document.getElementById('month-forward-btn');
-  if      (monthOffset === 0) el.textContent = 'This month';
-  else if (monthOffset === 1) el.textContent = 'Last month';
-  else                        el.textContent = monthOffset + ' months ago';
-  fwd.disabled = monthOffset <= 0;
 }
 
 // Tiles
@@ -41,9 +27,8 @@ async function fetchHTML(url, containerId) {
 
 async function refreshAllTiles() {
   await Promise.all([
-    fetchHTML('/tiles/days?offset='  + daysOffset,  'days-row'),
-    fetchHTML('/tiles/week?offset='  + weekOffset,  'week-row'),
-    fetchHTML('/tiles/month?offset=' + monthOffset, 'month-grid'),
+    fetchHTML('/tiles/days?offset=' + daysOffset, 'days-row'),
+    refreshMonthScroll(),
   ]);
 }
 
@@ -57,24 +42,49 @@ async function shiftDays(dir) {
   await fetchHTML('/tiles/days?offset=' + daysOffset, 'days-row');
 }
 
-async function shiftWeek(dir) {
-  const next = weekOffset + dir;
-  if (next < 0) return;
-  weekOffset = next;
-  updateWeekLabel();
-  await fetchHTML('/tiles/week?offset=' + weekOffset, 'week-row');
-  document.getElementById('week-label').textContent =
-    await (await fetch('/label/week?offset=' + weekOffset)).text();
+// Month (scrollable weeks)
+
+// Called once, the first time the "Month view" <details> panel is opened.
+// Waits until the panel is actually visible (so scrollHeight is meaningful),
+// then jumps the scroll position to the bottom so the current week is the
+// last row in view, and wires up infinite-scroll-upward loading.
+function handleMonthDetailsToggle(details) {
+  if (!details.open || monthScrollReady) return;
+  monthScrollReady = true;
+  const container = document.getElementById('month-scroll');
+  if (!container) return;
+  container.scrollTop = container.scrollHeight;
+  container.addEventListener('scroll', onMonthScroll);
 }
 
-async function shiftMonth(dir) {
-  const next = monthOffset + dir;
-  if (next < 0) return;
-  monthOffset = next;
-  updateMonthLabel();
-  await fetchHTML('/tiles/month?offset=' + monthOffset, 'month-grid');
-  document.getElementById('month-label').textContent =
-    await (await fetch('/label/month?offset=' + monthOffset)).text();
+async function onMonthScroll(e) {
+  const container = e.target;
+  if (container.scrollTop > 60 || monthLoadingMore) return;
+  monthLoadingMore = true;
+  const prevHeight = container.scrollHeight;
+  const html = await (await fetch(
+    '/tiles/monthweeks?start=' + monthWeeksLoaded + '&count=' + MONTH_BATCH
+  )).text();
+  if (html.trim()) {
+    container.insertAdjacentHTML('afterbegin', html);
+    monthWeeksLoaded += MONTH_BATCH;
+    // Keep the same rows in view instead of jumping after prepending.
+    container.scrollTop = container.scrollHeight - prevHeight + container.scrollTop;
+  }
+  monthLoadingMore = false;
+}
+
+// Re-fetches the same number of weeks already loaded (e.g. after a drink is
+// added/removed) and swaps them in, preserving the current scroll position.
+async function refreshMonthScroll() {
+  const container = document.getElementById('month-scroll');
+  if (!container) return;
+  const prevScrollTop = container.scrollTop;
+  const html = await (await fetch(
+    '/tiles/monthweeks?start=0&count=' + monthWeeksLoaded
+  )).text();
+  container.innerHTML = html;
+  container.scrollTop = prevScrollTop;
 }
 
 // Days
@@ -158,5 +168,3 @@ async function adjustDrink(date, key, delta) {
 
 // Init
 updateDaysLabel();
-updateWeekLabel();
-updateMonthLabel();

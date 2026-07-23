@@ -33,33 +33,13 @@
   <div class="tiles-row" id="days-row">{{DAYS_TILES}}</div>
 </div>
 
-<details>
-  <summary>
-    Week view
-    <span class="panel-sublabel" id="week-label">{{WEEK_LABEL}}</span>
-  </summary>
-  <div class="details-inner">
-    <div class="controls" style="margin-bottom:0.75rem">
-      <button class="btn-nav" onclick="shiftWeek(1)">◀ Prev week</button>
-      <span class="offset-display" id="week-offset-label">This week</span>
-      <button class="btn-nav" id="week-forward-btn" onclick="shiftWeek(-1)">Next week ▶</button>
-    </div>
-    <div class="tiles-row" id="week-row">{{WEEK_TILES}}</div>
-  </div>
-</details>
-
-<details>
+<details ontoggle="handleMonthDetailsToggle(this)" open>
   <summary>
     Month view
-    <span class="panel-sublabel" id="month-label">{{MONTH_LABEL}}</span>
+    <span class="panel-sublabel">Scroll up for earlier weeks</span>
   </summary>
   <div class="details-inner">
-    <div class="controls" style="margin-bottom:0.75rem">
-      <button class="btn-nav" onclick="shiftMonth(1)">◀ Prev month</button>
-      <span class="offset-display" id="month-offset-label">This month</span>
-      <button class="btn-nav" id="month-forward-btn" onclick="shiftMonth(-1)">Next month ▶</button>
-    </div>
-    <div id="month-grid">{{MONTH_GRID}}</div>
+    <div class="month-scroll" id="month-scroll">{{MONTH_WEEKS}}</div>
   </div>
 </details>
 

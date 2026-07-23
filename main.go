@@ -248,31 +248,6 @@ func renderWeekRow(weekOffset int) string {
 	return b.String()
 }
 
-func renderMonthGrid(monthOffset int) string {
-	now := time.Now()
-	first := time.Date(now.Year(), now.Month()-time.Month(monthOffset), 1, 0, 0, 0, 0, time.Local)
-	last := first.AddDate(0, 1, -1)
-
-	var b strings.Builder
-	b.WriteString(`<div class="cal-grid">`)
-	for _, h := range []string{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"} {
-		b.WriteString(fmt.Sprintf(`<div class="cal-header">%s</div>`, h))
-	}
-	startWd := int(first.Weekday())
-	if startWd == 0 {
-		startWd = 7
-	}
-	for i := 1; i < startWd; i++ {
-		b.WriteString(`<div class="cal-empty"></div>`)
-	}
-	for d := first; !d.After(last); d = d.AddDate(0, 0, 1) {
-		ds := d.Format("2006-01-02")
-		b.WriteString(renderTile(ds, d.Format("2"), dayUnits(ds)))
-	}
-	b.WriteString(`</div>`)
-	return b.String()
-}
-
 func weekLabel(offset int) string {
 	now := time.Now()
 	wd := int(now.Weekday())
@@ -284,9 +259,31 @@ func weekLabel(offset int) string {
 	return monday.Format("2 Jan") + " – " + sunday.Format("2 Jan")
 }
 
-func monthLabel(offset int) string {
-	now := time.Now()
-	return time.Date(now.Year(), now.Month()-time.Month(offset), 1, 0, 0, 0, 0, time.Local).Format("January 2006")
+// renderWeekBlock renders a single labeled week row (7 tiles) for use in the
+// scrollable month view. weekOffset 0 = current week, 1 = last week, etc.
+func renderWeekBlock(weekOffset int) string {
+	return `<div class="week-block" data-week-offset="` + strconv.Itoa(weekOffset) + `">` +
+		`<div class="week-block-label">` + weekLabel(weekOffset) + `</div>` +
+		`<div class="month-week-row">` + renderWeekRow(weekOffset) + `</div>` +
+		`</div>`
+}
+
+// renderMonthWeeks renders `count` consecutive week-blocks, for offsets
+// [start, start+count-1], ordered top-to-bottom from oldest to newest so
+// that the most recent (smallest offset) week always ends up last/at the
+// bottom of the scrollable container.
+func renderMonthWeeks(start, count int) string {
+	if start < 0 {
+		start = 0
+	}
+	if count <= 0 {
+		count = 1
+	}
+	var b strings.Builder
+	for off := start + count - 1; off >= start; off-- {
+		b.WriteString(renderWeekBlock(off))
+	}
+	return b.String()
 }
 
 // Modal
@@ -371,10 +368,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	page := string(tmpl)
 	page = strings.ReplaceAll(page, "{{SUMMARY}}", renderSummary())
 	page = strings.ReplaceAll(page, "{{DAYS_TILES}}", renderDaysRow(0))
-	page = strings.ReplaceAll(page, "{{WEEK_TILES}}", renderWeekRow(0))
-	page = strings.ReplaceAll(page, "{{MONTH_GRID}}", renderMonthGrid(0))
-	page = strings.ReplaceAll(page, "{{WEEK_LABEL}}", weekLabel(0))
-	page = strings.ReplaceAll(page, "{{MONTH_LABEL}}", monthLabel(0))
+	page = strings.ReplaceAll(page, "{{MONTH_WEEKS}}", renderMonthWeeks(0, monthBatchSize))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, page)
 }
@@ -391,26 +385,19 @@ func handleTilesDays(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, renderDaysRow(offset))
 }
 
-func handleTilesWeek(w http.ResponseWriter, r *http.Request) {
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+// monthBatchSize is how many week-rows are rendered per scroll batch in the
+// month view (both the initial server-rendered load and each subsequent
+// lazy-loaded chunk as the user scrolls up towards older weeks).
+const monthBatchSize = 6
+
+func handleTilesMonthWeeks(w http.ResponseWriter, r *http.Request) {
+	start, _ := strconv.Atoi(r.URL.Query().Get("start"))
+	count, err := strconv.Atoi(r.URL.Query().Get("count"))
+	if err != nil || count <= 0 {
+		count = monthBatchSize
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, renderWeekRow(offset))
-}
-
-func handleTilesMonth(w http.ResponseWriter, r *http.Request) {
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, renderMonthGrid(offset))
-}
-
-func handleLabelWeek(w http.ResponseWriter, r *http.Request) {
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-	fmt.Fprint(w, weekLabel(offset))
-}
-
-func handleLabelMonth(w http.ResponseWriter, r *http.Request) {
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-	fmt.Fprint(w, monthLabel(offset))
+	fmt.Fprint(w, renderMonthWeeks(start, count))
 }
 
 func handleModal(w http.ResponseWriter, r *http.Request) {
@@ -533,10 +520,7 @@ func main() {
 	mux.HandleFunc("/", handleIndex)
 	mux.HandleFunc("/summary",       handleSummary)
 	mux.HandleFunc("/tiles/days",   handleTilesDays)
-	mux.HandleFunc("/tiles/week",   handleTilesWeek)
-	mux.HandleFunc("/tiles/month",  handleTilesMonth)
-	mux.HandleFunc("/label/week",   handleLabelWeek)
-	mux.HandleFunc("/label/month",  handleLabelMonth)
+	mux.HandleFunc("/tiles/monthweeks", handleTilesMonthWeeks)
 	mux.HandleFunc("/modal",        handleModal)
 	mux.HandleFunc("/drink/add",    handleAddDrink)
 	mux.HandleFunc("/drink/remove", handleRemoveDrink)

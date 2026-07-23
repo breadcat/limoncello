@@ -142,33 +142,44 @@ details > .details-inner       { padding: 0.75rem 1rem 1rem; overflow-x: auto; }
   margin-right: 1rem;
 }
 
-/* Calendar  */
+/* Month view (scrollable weeks) */
 
-.cal-grid {
-  display: grid;
-  grid-template-columns: repeat(7, var(--cal-tile));
-  gap: 6px;
-  --cal-tile: clamp(38px, calc((100vw - 2rem - 48px) / 7), 100px);
+.month-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scroll-behavior: auto;
+  touch-action: pan-y;
 }
 
-.cal-header {
-  text-align: center;
-  font-size: clamp(0.55rem, 1.3vw, 0.68rem);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.month-scroll::-webkit-scrollbar       { width: 5px; }
+.month-scroll::-webkit-scrollbar-track { background: transparent; }
+.month-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+.week-block-label {
+  font-size: 0.7rem;
   color: var(--text-dim);
-  padding-bottom: 4px;
+  margin-bottom: 5px;
 }
 
-.cal-grid .tile {
-  width: var(--cal-tile);
-  height: var(--cal-tile);
-  font-size: clamp(0.5rem, 1.3vw, 0.72rem);
+/* Week rows inside the month scroller use a fluid 7-column grid (instead of
+   the fixed viewport-based tile size used elsewhere) so they always fit
+   exactly within the panel's width — including the width taken up by the
+   vertical scrollbar — with no per-row horizontal scrollbar. */
+.month-week-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
 }
 
-.cal-grid .tile .date-label { font-size: clamp(0.5rem, 1.2vw, 0.65rem); }
-.cal-grid .tile .units      { font-size: clamp(0.6rem, 1.5vw, 0.85rem); }
-.cal-empty { width: var(--cal-tile); }
+.month-week-row .tile {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
 
 /* Modal */
 
