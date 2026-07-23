@@ -2,11 +2,8 @@
 
 let daysOffset  = 0;
 
-// Month (scrollable weeks) view
-const MONTH_BATCH = 6;               // must match monthBatchSize in main.go
-let monthWeeksLoaded  = MONTH_BATCH; // weeks already present server-side on load
-let monthScrollReady  = false;       // becomes true once the panel is first opened
-let monthLoadingMore  = false;
+// Month (calendar) view
+let monthOffset = 0; // 0 = current month, -1 = previous month, 1 = next month, ...
 
 // Labels
 
@@ -28,7 +25,7 @@ async function fetchHTML(url, containerId) {
 async function refreshAllTiles() {
   await Promise.all([
     fetchHTML('/tiles/days?offset=' + daysOffset, 'days-row'),
-    refreshMonthScroll(),
+    loadMonth(),
   ]);
 }
 
@@ -42,49 +39,21 @@ async function shiftDays(dir) {
   await fetchHTML('/tiles/days?offset=' + daysOffset, 'days-row');
 }
 
-// Month (scrollable weeks)
+// Month (calendar)
 
-// Called once, the first time the "Month view" <details> panel is opened.
-// Waits until the panel is actually visible (so scrollHeight is meaningful),
-// then jumps the scroll position to the bottom so the current week is the
-// last row in view, and wires up infinite-scroll-upward loading.
-function handleMonthDetailsToggle(details) {
-  if (!details.open || monthScrollReady) return;
-  monthScrollReady = true;
-  const container = document.getElementById('month-scroll');
-  if (!container) return;
-  container.scrollTop = container.scrollHeight;
-  container.addEventListener('scroll', onMonthScroll);
+// Fetches the full calendar grid + label for the currently selected
+// monthOffset and swaps it in, updating the Prev/Next button state.
+async function loadMonth() {
+  const res  = await fetch('/tiles/month?offset=' + monthOffset);
+  const data = await res.json();
+  document.getElementById('month-label').textContent = data.label;
+  document.getElementById('month-grid').innerHTML     = data.grid;
+  document.getElementById('month-next-btn').disabled  = data.next_disabled;
 }
 
-async function onMonthScroll(e) {
-  const container = e.target;
-  if (container.scrollTop > 60 || monthLoadingMore) return;
-  monthLoadingMore = true;
-  const prevHeight = container.scrollHeight;
-  const html = await (await fetch(
-    '/tiles/monthweeks?start=' + monthWeeksLoaded + '&count=' + MONTH_BATCH
-  )).text();
-  if (html.trim()) {
-    container.insertAdjacentHTML('afterbegin', html);
-    monthWeeksLoaded += MONTH_BATCH;
-    // Keep the same rows in view instead of jumping after prepending.
-    container.scrollTop = container.scrollHeight - prevHeight + container.scrollTop;
-  }
-  monthLoadingMore = false;
-}
-
-// Re-fetches the same number of weeks already loaded (e.g. after a drink is
-// added/removed) and swaps them in, preserving the current scroll position.
-async function refreshMonthScroll() {
-  const container = document.getElementById('month-scroll');
-  if (!container) return;
-  const prevScrollTop = container.scrollTop;
-  const html = await (await fetch(
-    '/tiles/monthweeks?start=0&count=' + monthWeeksLoaded
-  )).text();
-  container.innerHTML = html;
-  container.scrollTop = prevScrollTop;
+async function shiftMonth(dir) {
+  monthOffset += dir;
+  await loadMonth();
 }
 
 // Days

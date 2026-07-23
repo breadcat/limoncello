@@ -33,13 +33,20 @@
   <div class="tiles-row" id="days-row">{{DAYS_TILES}}</div>
 </div>
 
-<details ontoggle="handleMonthDetailsToggle(this)" open>
+<details open>
   <summary>
     Month view
-    <span class="panel-sublabel">Scroll up for earlier weeks</span>
   </summary>
   <div class="details-inner">
-    <div class="month-scroll" id="month-scroll">{{MONTH_WEEKS}}</div>
+    <div class="month-nav">
+      <button class="btn-nav" onclick="shiftMonth(-1)">◀ Prev</button>
+      <span class="month-label" id="month-label">{{MONTH_LABEL}}</span>
+      <button class="btn-nav" id="month-next-btn" onclick="shiftMonth(1)" disabled>Next ▶</button>
+    </div>
+    <div class="month-weekday-header">
+      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+    </div>
+    <div class="month-grid" id="month-grid">{{MONTH_GRID}}</div>
   </div>
 </details>
 
