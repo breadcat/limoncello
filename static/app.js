@@ -26,6 +26,7 @@ async function refreshAllTiles() {
   await Promise.all([
     fetchHTML('/tiles/days?offset=' + daysOffset, 'days-row'),
     loadMonth(),
+    fetchHTML('/summary', 'summary'),
   ]);
 }
 
