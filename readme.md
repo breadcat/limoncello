@@ -13,6 +13,7 @@ Then access the servers IP address via a web browser on port `8080`.
 
 ## Features
 * Arbitrary volume/ABV calculation, check `var volumes`
-* Weekly and monthly views
-* Coloured tiles
+* Monthly calendar view
+* Unit dependant coloured tiles
+* Weekly and monthly summaries
 * No external dependencies
