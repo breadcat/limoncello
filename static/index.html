@@ -21,17 +21,18 @@
   <div class="legend-item"><div class="legend-dot" style="background:#0a0a0a;border:1px solid #333"></div>30+</div>
 </div>
 
-<div class="section">
-  <div class="section-label">
-    <span>Recent days</span>
-    <div class="controls">
-      <button class="btn-nav" onclick="shiftDays(1)">◀ Earlier</button>
-      <span class="offset-display" id="days-offset-label">Today ±2</span>
-      <button class="btn-nav" id="days-forward-btn" onclick="shiftDays(-1)">Later ▶</button>
+<details open>
+  <summary>
+    Summary
+  </summary>
+  <div class="details-inner">
+    <div class="period-toggle">
+      <button class="btn-nav active" id="mode-weeks" onclick="setPeriodMode('weeks')">Weeks</button>
+      <button class="btn-nav" id="mode-months" onclick="setPeriodMode('months')">Months</button>
     </div>
+    <div class="period-list" id="period-list">{{PERIODS}}</div>
   </div>
-  <div class="tiles-row" id="days-row">{{DAYS_TILES}}</div>
-</div>
+</details>
 
 <details open>
   <summary>

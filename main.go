@@ -202,32 +202,122 @@ func formatUnits(u float64) string {
 	return fmt.Sprintf("%.1f", u)
 }
 
-func renderTile(date, label string, units float64) string {
-	cls := dateColorClass(units, date)
-	todayCls := ""
-	if date == time.Now().Format("2006-01-02") {
-		todayCls = " today"
+// Week/Month period summaries
+
+func ordinal(n int) string {
+	if n%100 >= 11 && n%100 <= 13 {
+		return fmt.Sprintf("%dth", n)
 	}
-	unitsSpan := ""
-	if units > 0 {
-		unitsSpan = fmt.Sprintf(`<span class="units">%s u</span>`, formatUnits(units))
+	switch n % 10 {
+	case 1:
+		return fmt.Sprintf("%dst", n)
+	case 2:
+		return fmt.Sprintf("%dnd", n)
+	case 3:
+		return fmt.Sprintf("%drd", n)
 	}
-	return fmt.Sprintf(
-		`<div class="tile %s%s" onclick="openDay('%s')" title="%s"><span class="date-label">%s</span>%s</div>`,
-		cls, todayCls, date, date, label, unitsSpan,
-	)
+	return fmt.Sprintf("%dth", n)
 }
 
-// Views
+func startOfDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
 
-func renderDaysRow(offset int) string {
-	today, _ := time.Parse("2006-01-02", time.Now().Format("2006-01-02"))
-	var b strings.Builder
-	start := today.AddDate(0, 0, -offset-2)
-	for i := 0; i < 5; i++ {
-		d := start.AddDate(0, 0, i)
+// weekStart returns the Monday of the week containing t.
+func weekStart(t time.Time) time.Time {
+	t = startOfDay(t)
+	wd := int(t.Weekday())
+	if wd == 0 {
+		wd = 7
+	}
+	return t.AddDate(0, 0, -(wd - 1))
+}
+
+// earliestLoggedDay returns the earliest date with at least one drink, or
+// today if nothing has been logged.
+func earliestLoggedDay(today time.Time) time.Time {
+	earliest := today
+	for _, dl := range db.DayLogs {
+		if len(dl.Drinks) == 0 {
+			continue
+		}
+		t, err := time.ParseInLocation("2006-01-02", dl.Date, today.Location())
+		if err == nil && t.Before(earliest) {
+			earliest = t
+		}
+	}
+	return earliest
+}
+
+// periodStats totals drinks/units and drink-free days over range
+func periodStats(start, end, today time.Time) (free, days, drinks int, units float64) {
+	todayStr := today.Format("2006-01-02")
+	for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
+		days++
 		ds := d.Format("2006-01-02")
-		b.WriteString(renderTile(ds, d.Format("Mon 2"), dayUnits(ds)))
+		n := 0
+		if dl := findDayLog(ds); dl != nil {
+			for _, dr := range dl.Drinks {
+				n += dr.Count
+				units += dr.Units()
+			}
+		}
+		drinks += n
+		if n == 0 && ds < todayStr {
+			free++
+		}
+	}
+	return
+}
+
+func renderPeriodRow(label string, current bool, free, days, drinks int, units float64) string {
+	cls := "period-row"
+	if current {
+		cls += " current"
+	}
+	return `<div class="` + cls + `">` +
+		`<span class="period-label">` + label + `</span>` +
+		`<span class="period-stat"><strong>` + strconv.Itoa(free) + `/` + strconv.Itoa(days) + `</strong><small>drink-free</small></span>` +
+		`<span class="period-stat"><strong>` + strconv.Itoa(drinks) + `</strong><small>drinks</small></span>` +
+		`<span class="period-stat"><strong>` + formatUnits(units) + `</strong><small>units</small></span>` +
+		`</div>`
+}
+
+func renderPeriods(mode string) string {
+	today := startOfDay(time.Now())
+	earliest := earliestLoggedDay(today)
+	thisYear := today.Year()
+	var b strings.Builder
+
+	if mode == "months" {
+		cur := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, today.Location())
+		stop := time.Date(earliest.Year(), earliest.Month(), 1, 0, 0, 0, 0, today.Location())
+		i := 0
+		for m := cur; i < 600 && (i < 4 || !m.Before(stop)); m = m.AddDate(0, -1, 0) {
+			end := m.AddDate(0, 1, -1)
+			free, days, drinks, units := periodStats(m, end, today)
+			label := m.Format("January")
+			if m.Year() != thisYear {
+				label = m.Format("January 2006")
+			}
+			b.WriteString(renderPeriodRow(label, i == 0, free, days, drinks, units))
+			i++
+		}
+		return b.String()
+	}
+
+	cur := weekStart(today)
+	stop := weekStart(earliest)
+	i := 0
+	for w := cur; i < 2600 && (i < 4 || !w.Before(stop)); w = w.AddDate(0, 0, -7) {
+		end := w.AddDate(0, 0, 6)
+		free, days, drinks, units := periodStats(w, end, today)
+		label := ordinal(w.Day()) + " " + w.Format("January")
+		if w.Year() != thisYear {
+			label += " " + w.Format("2006")
+		}
+		b.WriteString(renderPeriodRow(label, i == 0, free, days, drinks, units))
+		i++
 	}
 	return b.String()
 }
@@ -383,7 +473,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	page := string(tmpl)
 	page = strings.ReplaceAll(page, "{{SUMMARY}}", renderSummary())
-	page = strings.ReplaceAll(page, "{{DAYS_TILES}}", renderDaysRow(0))
+	page = strings.ReplaceAll(page, "{{PERIODS}}", renderPeriods("weeks"))
 	page = strings.ReplaceAll(page, "{{MONTH_LABEL}}", monthLabel(0))
 	page = strings.ReplaceAll(page, "{{MONTH_GRID}}", renderMonthGrid(0))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -396,10 +486,9 @@ func handleSummary(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, renderSummary())
 }
 
-func handleTilesDays(w http.ResponseWriter, r *http.Request) {
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+func handlePeriods(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, renderDaysRow(offset))
+	fmt.Fprint(w, renderPeriods(r.URL.Query().Get("mode")))
 }
 
 func handleTilesMonth(w http.ResponseWriter, r *http.Request) {
@@ -536,7 +625,7 @@ func main() {
 	mux.Handle("/static/", http.FileServer(http.FS(staticFiles)))
 	mux.HandleFunc("/", handleIndex)
 	mux.HandleFunc("/summary",       handleSummary)
-	mux.HandleFunc("/tiles/days",   handleTilesDays)
+	mux.HandleFunc("/summary/periods", handlePeriods)
 	mux.HandleFunc("/tiles/month",  handleTilesMonth)
 	mux.HandleFunc("/modal",        handleModal)
 	mux.HandleFunc("/drink/add",    handleAddDrink)

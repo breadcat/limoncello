@@ -1,17 +1,23 @@
 'use strict';
 
-let daysOffset  = 0;
+// Period summary (weeks / months)
+let periodMode = 'weeks';
 
 // Month (calendar) view
 let monthOffset = 0; // 0 = current month, -1 = previous month, 1 = next month, ...
 
-// Labels
+// Period summary
 
-function updateDaysLabel() {
-  const el  = document.getElementById('days-offset-label');
-  const fwd = document.getElementById('days-forward-btn');
-  el.textContent = daysOffset === 0 ? 'Today ±2' : daysOffset + 'd back';
-  fwd.disabled   = daysOffset <= 0;
+async function loadPeriods() {
+  await fetchHTML('/summary/periods?mode=' + periodMode, 'period-list');
+}
+
+async function setPeriodMode(mode) {
+  periodMode = mode;
+  document.getElementById('mode-weeks').classList.toggle('active', mode === 'weeks');
+  document.getElementById('mode-months').classList.toggle('active', mode === 'months');
+  await loadPeriods();
+  document.getElementById('period-list').scrollTop = 0;
 }
 
 // Tiles
@@ -24,20 +30,10 @@ async function fetchHTML(url, containerId) {
 
 async function refreshAllTiles() {
   await Promise.all([
-    fetchHTML('/tiles/days?offset=' + daysOffset, 'days-row'),
+    loadPeriods(),
     loadMonth(),
     fetchHTML('/summary', 'summary'),
   ]);
-}
-
-// Navigation
-
-async function shiftDays(dir) {
-  const next = daysOffset + dir;
-  if (next < 0) return;
-  daysOffset = next;
-  updateDaysLabel();
-  await fetchHTML('/tiles/days?offset=' + daysOffset, 'days-row');
 }
 
 // Month (calendar)
@@ -135,6 +131,3 @@ async function adjustDrink(date, key, delta) {
   refreshModal(date);
   refreshAllTiles();
 }
-
-// Init
-updateDaysLabel();

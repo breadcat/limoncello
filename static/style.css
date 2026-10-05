@@ -134,6 +134,62 @@ details > summary::after       { content: "▸"; transition: transform 0.2s; }
 details[open] > summary::after { transform: rotate(90deg); }
 details > .details-inner       { padding: 0.75rem 1rem 1rem; overflow-x: auto; }
 
+/* Period summary (weeks / months) */
+
+.period-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.period-toggle .btn-nav { flex: 1; padding: 6px 10px; }
+.period-toggle .btn-nav.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.period-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.period-list::-webkit-scrollbar       { width: 4px; }
+.period-list::-webkit-scrollbar-track { background: transparent; }
+.period-list::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+.period-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 1.4fr) repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.period-row.current { outline: 1px solid var(--accent); }
+
+.period-label { font-size: 0.85rem; font-weight: 600; }
+
+.period-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+}
+.period-stat strong { font-size: 0.95rem; color: var(--accent); }
+.period-stat small  {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
 /* Month view (calendar grid) */
 
 .month-nav {
