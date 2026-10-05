@@ -10,34 +10,8 @@
 
 <div id="summary">{{SUMMARY}}</div>
 
-<div class="legend">
-  <div class="legend-item"><div class="legend-dot" style="background:#1e1e2e;border:1px solid #333"></div>0</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#1a4a7a"></div>&lt;2</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#1a5c2a"></div>&lt;4</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#5c4a00"></div>&lt;8</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#6b2e00"></div>&lt;14</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#6b0a0a"></div>&lt;20</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#3d0a6b"></div>&lt;30</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#0a0a0a;border:1px solid #333"></div>30+</div>
-</div>
-
-<details>
-  <summary>
-    Summary
-  </summary>
-  <div class="details-inner">
-    <div class="period-toggle">
-      <button class="btn-nav active" id="mode-weeks" onclick="setPeriodMode('weeks')">Weeks</button>
-      <button class="btn-nav" id="mode-months" onclick="setPeriodMode('months')">Months</button>
-    </div>
-    <div class="period-list" id="period-list">{{PERIODS}}</div>
-  </div>
-</details>
-
 <details open>
-  <summary>
-    Month view
-  </summary>
+  <summary>Calendar</summary>
   <div class="details-inner">
     <div class="month-nav">
       <button class="btn-nav" onclick="shiftMonth(-1)">◀ Prev</button>
@@ -51,6 +25,27 @@
   </div>
 </details>
 
+<details>
+  <summary>Summary</summary>
+  <div class="details-inner">
+    <div class="period-toggle">
+      <button class="btn-nav active" id="mode-weeks" onclick="setPeriodMode('weeks')">Weeks</button>
+      <button class="btn-nav" id="mode-months" onclick="setPeriodMode('months')">Months</button>
+    </div>
+    <div class="period-list" id="period-list">{{PERIODS}}</div>
+  </div>
+</details>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#1e1e2e;border:1px solid #333"></div>0</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#1a4a7a"></div>&lt;2</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#1a5c2a"></div>&lt;4</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#5c4a00"></div>&lt;8</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#6b2e00"></div>&lt;14</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#6b0a0a"></div>&lt;20</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3d0a6b"></div>&lt;30</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#0a0a0a;border:1px solid #333"></div>30+</div>
+</div>
 <script src="/static/app.js"></script>
 </body>
 </html>
