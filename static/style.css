@@ -164,7 +164,7 @@ details > .details-inner       { padding: 0.75rem 1rem 1rem; overflow-x: auto; }
 
 .period-row {
   display: grid;
-  grid-template-columns: minmax(90px, 1.4fr) repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: 8px;
   background: var(--surface2);
@@ -174,7 +174,14 @@ details > .details-inner       { padding: 0.75rem 1rem 1rem; overflow-x: auto; }
 
 .period-row.current { outline: 1px solid var(--accent); }
 
-.period-label { font-size: 0.85rem; font-weight: 600; }
+.period-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .period-stat {
   display: flex;
